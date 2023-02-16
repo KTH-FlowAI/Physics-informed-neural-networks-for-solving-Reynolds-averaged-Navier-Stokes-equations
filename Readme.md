@@ -47,14 +47,23 @@ For *Falker-Skan* (**FS**) and adverse-pressure-gradient (**APG**) Boundary Laye
     └── train.py
 
 ***data***: Folder to store the boundary layer data
+
 ***pred***: Folder to store the prediction results
-***models***: Folder to store the trainede models    
-***figs***: Folder to store the postprocessed figures     
-***train_configs.py***: Definition of training parameters   
+
+***models***: Folder to store the trainede models  
+
+***figs***: Folder to store the postprocessed figures  
+
+***train_configs.py***: Definition of training parameters 
+
 ***PINN.py***: class object of PINN
+
 ***lbfgs.py***: optimizer based on L-BFGS algorithm
+
 ***postprocessing.py***: script for postprocessing results. 
+
 ***error.py***: function for error assessment used in paper.
+
 ***train.py***: script for training PINNs model 
 
 
