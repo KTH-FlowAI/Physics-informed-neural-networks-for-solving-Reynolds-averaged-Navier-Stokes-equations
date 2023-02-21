@@ -2,10 +2,12 @@ import tensorflow as tf
 from tensorflow.keras import models
 import scipy.optimize as sopt
 import numpy as np
+from train_configs import APG_config
+
 
 
 class optimizer():
-    def __init__(self, trainable_vars, method = 'L-BFGS-B'):
+    def __init__(self, trainable_vars, method = APG_config.method ):
         super(optimizer, self).__init__()
         self.trainable_variables = trainable_vars
         self.method = method

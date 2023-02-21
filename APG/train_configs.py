@@ -23,4 +23,4 @@ class APG_config:
     n_layer = 8  
     cp_step = 100
     bc_step = 10
-    
+    method = "L-BFGS-B"

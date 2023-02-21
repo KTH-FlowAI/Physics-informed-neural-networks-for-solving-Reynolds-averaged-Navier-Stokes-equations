@@ -30,8 +30,6 @@ class PINNs(models.Model):
             U = pred[:, 0]
             V = pred[:, 1]
             uv = pred[:, 2]
-            uu = pred[:, 3]
-            vv = pred[:, 4]
 
 
             U_x = tape.gradient(U, x)
@@ -45,13 +43,11 @@ class PINNs(models.Model):
 
         uv_y = tape.gradient(uv, y)
         uv_x = tape.gradient(uv, x)
-        uu_x = tape.gradient(uu, x)
-        vv_y = tape.gradient(vv, y)
         
       
               
-        f1 = U * U_x + V * U_y -  self.nu * (U_xx + U_yy) + uu_x + uv_y
-        f2 = U * V_x + V * V_y -  self.nu * (V_xx + V_yy) + uv_x + vv_y
+        f1 = U * U_x + V * U_y -  self.nu * (U_xx + U_yy) + uv_y
+        f2 = U * V_x + V * V_y -  self.nu * (V_xx + V_yy) + uv_x 
         f3 = U_x + V_y
         
         f = tf.stack([f1, f2, f3], axis = -1)

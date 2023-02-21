@@ -1,11 +1,30 @@
-#%%
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras import models, layers, optimizers, initializers
-from PINN import PINNs
+from pyDOE import lhs
+from tensorflow.keras import models, layers, optimizers, activations
+from PINN_phill import PINNs
+from train_configs import phill_config
 from matplotlib import pyplot as plt
+from time import time
+from error import l2norm_err
+"""
+Train PINN for Periodic Hill
+
+Return: 
+    1. A npz file contain: 
+                          + Prediction "pred" : [u, v, uv, uu, vv, p]
+                          + Reference   "ref"
+                          + x grid      "x"
+                          + y grid      "y"
+                          + error       "error"
+    
+    2. A saved .h5 model of PINN 
+    
+"""
 #%%
-d = np.load('./../data/stsphill.npz')
+#################
+# DATA loading
+#################
+d = np.load('data/stsphill.npz')
 pos = d['pos']
 scal = d['scal']
 
@@ -27,101 +46,93 @@ v[0] = 0.0
 uv[0] = 0.0
 uu[0] = 0.0
 vv[0] = 0.0
-#%%
-x = x - x.min()
-y = y - y.min()
-x_m = x.max()
-y_m = y.max()
-x = x / x_m
-y = y / y_m
 
+ref = np.stack((u, v, p, uv, uu, vv))
+#%% 
+#################
+# Training Parameters
+#################
+act = phill_config.act
+nn = phill_config.n_neural
+nl = phill_config.n_layer
+n_adam = phill_config.n_adam
 
-i_BC = np.zeros(x.shape, dtype = bool)
-i_BC[0] = True; i_BC[-1] = True
-i_BC[:, 0] = True; i_BC[:, -1] = True
+n_cp = 2430
+tcp = 'grid'
 
-# np.random.seed(24)
-# i_f = np.random.choice(a = [False, True], size = x.shape, p = [0.99, 0.01])
-#%%
-
-xy_bc = np.concatenate((x[i_BC].reshape((-1, 1)),
-                          y[i_BC].reshape((-1, 1))), axis = 1)
-
-uv_bc = np.concatenate((u[i_BC].reshape((-1, 1)),
-                        v[i_BC].reshape((-1, 1)),
-                        uv[i_BC].reshape((-1, 1)),
-                        uu[i_BC].reshape((-1, 1)),
-                        vv[i_BC].reshape((-1, 1)),
-                        p[i_BC].reshape((-1, 1))), axis = 1)
-
-xy_f = np.concatenate((x[::10, ::2].reshape((-1, 1)),
+cp = np.concatenate((x[::10, ::2].reshape((-1, 1)),
                        y[::10, ::2].reshape((-1, 1))), axis = 1)
+#% Boundary points
+ind_bc = np.zeros(x.shape, dtype = bool)
+ind_bc[[0, -1]] = True
+ind_bc[:, [0, -1]] = True
 
-out_m = np.abs(uv_bc).max(axis = 0) 
-uv_bc = uv_bc / out_m
+x_bc = x[ind_bc].flatten()
+y_bc = y[ind_bc].flatten()
 
-u_m = out_m[0]
-v_m = out_m[1]
-uv_m = out_m[2]
-uu_m = out_m[3]
-vv_m = out_m[4]
-p_m = out_m[5]
-m = np.array([u_m, v_m, uv_m, uu_m, vv_m, p_m, x_m, y_m])
+u_bc = u[ind_bc].flatten()
+v_bc = v[ind_bc].flatten()
+uv_bc = uv[ind_bc].flatten()
+uu_bc = uu[ind_bc].flatten()
+vv_bc = vv[ind_bc].flatten()
+p_bc = p[ind_bc].flatten()
+
+bc = np.array([x_bc, y_bc, 
+               u_bc, v_bc, 
+               uv_bc, uu_bc, vv_bc, 
+               p_bc]).T
+
+ni = 2
+nv = bc.shape[1] - ni
+p = 1
+# Randomly select half of Boundary points
+indx_bc = np.random.choice([False, True], len(bc), p=[1 - p, p])
+bc = bc[indx_bc]
+
+test_name = f'_{nn}_{nl}_{act}_{n_adam}_{n_cp}_{tcp}'
 #%%
-initializer = tf.keras.initializers.glorot_uniform()
-act = tf.keras.activations.tanh
-inp_U = layers.Input(shape = (2,), name = 'inp_U')
-h_l = inp_U
-for i in range(8):
-    h_l = layers.Dense(20, activation = act, kernel_initializer = initializer)(h_l)
-U_l = layers.Dense(6, kernel_initializer = initializer, name = 'U')(h_l)
+#################
+# Compiling Model
+#################
+inp = layers.Input(shape = (ni,))
+hl = inp
+for i in range(nl):
+    hl = layers.Dense(nn, activation = act)(hl)
+out = layers.Dense(nv)(hl)
 
-U_net = models.Model(inputs = inp_U, outputs = U_l)
-#%%
-epochs = 100
-opt = optimizers.Adam(lr = 1e-3)
-pinns = PINNs(U_net, opt, epochs, m, sopt = 'BFGS', a = [1.0, 1.0])
-pinns.fit(xy_bc, uv_bc, xy_f)
+model = models.Model(inp, out)
+print(model.summary())
 
-hist = np.array(pinns.hist)
-np.save('hist_2', hist)
-U_net.save('model_2.h5')
+lr = 1e-3
+opt = optimizers.Adam(lr)
+pinn = PINNs(model, opt, n_adam)
+
+#################
+# Training Process
+#################
+print(f"INFO: Start training case_{test_name}")
+st_time = time()
+hist = pinn.fit(bc, cp)
+en_time = time()
+comp_time = en_time - st_time
 # %%
-xy_p = np.concatenate((x.reshape((-1, 1)),
-                        y.reshape((-1, 1))), axis = 1)
+#################
+# Prediction
+#################
+cpp = np.array([x.flatten(), y.flatten()]).T
 
-u_pred = U_net.predict(xy_p)
-u_p = u_pred[:, 0].reshape(u.shape) * u_m
-v_p = u_pred[:, 1].reshape(u.shape) * v_m
-uv_p = u_pred[:, 2].reshape(u.shape) * uv_m
-uu_p = u_pred[:, 3].reshape(u.shape) * uu_m
-vv_p = u_pred[:, 4].reshape(u.shape) * vv_m
-p_p = u_pred[:, 5].reshape(u.shape) * p_m
-#%%
-plt.contourf(x, y, u)
-plt.figure()
-plt.contourf(x, y, u_p)
-plt.figure()
-plt.contourf(x, y, vv)
-plt.figure()
-plt.contourf(x, y, vv_p)
-# %%
-e_u = np.linalg.norm(u - u_p)/np.linalg.norm(u); print(e_u)
-e_v = np.linalg.norm(v - v_p)/np.linalg.norm(v); print(e_v)
-e_p = np.linalg.norm(p - p_p)/np.linalg.norm(p); print(e_p)
-e_uv = np.linalg.norm(uv - uv_p)/np.linalg.norm(uv); print(e_uv)
-e_uu = np.linalg.norm(uu - uu_p)/np.linalg.norm(uu); print(e_uu)
-e_vv = np.linalg.norm(vv - vv_p)/np.linalg.norm(vv); print(e_vv)
-#%%
-n = int(u.shape[1]/2)
-plt.figure()
-plt.plot(y[:, n], u[:, n])
-plt.plot(y[:, n], u_p[:, n])
-plt.figure()
-plt.plot(y[:, n], uv[:, n])
-plt.plot(y[:, n], uv_p[:, n])
-#%%
-np.savez_compressed('./test_2', u_p = u_p, v_p = v_p, p_p = p_p
-                            , uu_p = uu_p, uv_p = uv_p, vv_p = vv_p)
+pred = pinn.predict(cpp)
+u_p = pred[:, 0].reshape(u.shape)
+v_p = pred[:, 1].reshape(u.shape)
+uv_p = pred[:, 2].reshape(u.shape)
+uu_p = pred[:, 3].reshape(u.shape)
+vv_p = pred[:, 4].reshape(u.shape)
+p_p = pred[:, 5].reshape(u.shape)
 
-# %%
+pred = np.stack((u_p, v_p, p_p, uv_p, uu_p, vv_p))
+err = l2norm_err(ref, pred)
+#%%
+np.savez_compressed('pred/res_phill' + test_name, pred = pred, ref = ref, hist = hist, ct = comp_time)
+model.save('models/model_phill' + test_name + '.h5')
+print("INFO: Prediction and model have been saved!")
+

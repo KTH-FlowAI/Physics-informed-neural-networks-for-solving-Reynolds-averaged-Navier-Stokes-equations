@@ -2,11 +2,11 @@ import tensorflow as tf
 from tensorflow.keras import models
 import scipy.optimize as sopt
 import numpy as np
-
+from train_configs import FS_config
 
 class optimizer():
     
-    def __init__(self, trainable_vars, method = 'L-BFGS-B'): # Use BFGS alternatively to improve the performance
+    def __init__(self, trainable_vars, method = FS_config.method): # Use BFGS alternatively to improve the performance
         super(optimizer, self).__init__()
         self.trainable_variables = trainable_vars
         self.method = method

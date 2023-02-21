@@ -10,7 +10,7 @@ Train PINN for APG BL
 
 Return: 
     1. A npz file contain: 
-                          + Prediction "pred" 
+                          + Prediction "pred" : [u, v, uv, uu, vv, p]
                           + Reference   "ref"
                           + x grid      "x"
                           + y grid      "y"
@@ -50,9 +50,6 @@ n_adam = APG_config.n_adam
 cp_step = APG_config.cp_step
 bc_step = APG_config.bc_step
 
-#%%
-lb = np.array([x.min(), y.min()])
-ub = np.array([x.max(), y.max()])
 
 cp = np.concatenate((x[:, ::cp_step].reshape((-1, 1)), 
                      y[:, ::cp_step].reshape((-1, 1))), axis = 1)

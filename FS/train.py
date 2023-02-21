@@ -1,6 +1,6 @@
 import numpy as np
 from tensorflow.keras import models, layers, optimizers, activations
-from PINN import PINNs
+from FS.PINN_FS import PINNs
 from matplotlib import pyplot as plt
 from time import time
 from train_configs import FS_config

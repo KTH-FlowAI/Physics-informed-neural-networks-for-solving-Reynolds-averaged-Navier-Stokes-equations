@@ -2,10 +2,10 @@ import tensorflow as tf
 from tensorflow.keras import models
 import scipy.optimize as sopt
 import numpy as np
-
+from train_configs import phill_config
 
 class optimizer():
-    def __init__(self, trainable_vars, method = 'L-BFGS-B'):
+    def __init__(self, trainable_vars, method =phill_config.method):
         super(optimizer, self).__init__()
         self.trainable_variables = trainable_vars
         self.method = method
@@ -44,10 +44,3 @@ class optimizer():
                                                    'maxls': 50,
                                                    'gtol': 1.0 * np.finfo(float).eps,
                                                    'ftol' : 1.0 * np.finfo(float).eps})
-
-
-# def func(params_1d):
-#     self.assign_params(params_1d)
-#     loss, grads = self.train_step(xy, uv, xy_f)
-#     grads = tf.dynamic_stitch(self.idx, grads)
-#     return loss.numpy().astype(np.float64), grads.numpy().astype(np.float64)
