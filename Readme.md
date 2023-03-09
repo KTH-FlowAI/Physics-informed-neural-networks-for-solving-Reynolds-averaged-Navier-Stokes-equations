@@ -11,7 +11,9 @@ The code was run successfully using Tensorflow>=2.6.0, using 1 GPU for training.
 ## Data
 The dataset used for training and testing are available in order to ensure the reproducibility of the results. 
 
-In this repository, we only offer dataset for *Falker-Skan* Boundary Layer [**FS**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/9f05eac466ed6f15638de9ec173e4826059b0b49/FS/data/FalknerSkan_n0.08.npz) and adverse-pressure-gradient (APG) Boundary Layer [**APG**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/9f05eac466ed6f15638de9ec173e4826059b0b49/APG/data/APG_b1n.npz) case.
+In this repository, the database for *zero-presure-gradient* Boundary Layer  and turbulent flows over NACA4412 airfoil  are required to be downloaded manually. 
+
+The links of file have been provided in [**ZPG**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/24c0f8be7af94de8128bb08f589e5a77347ca36c/ZPG/data/Link.md) and [**NACA**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/24c0f8be7af94de8128bb08f589e5a77347ca36c/NACA4412/data/Link.md)
 
 Please, get in touch using the email address for correspondance in the paper to arrange the transfer. 
 
