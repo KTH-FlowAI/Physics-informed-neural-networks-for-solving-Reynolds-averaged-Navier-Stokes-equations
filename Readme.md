@@ -11,7 +11,7 @@ The code was run successfully using Tensorflow>=2.6.0, using 1 GPU for training.
 ## Data
 The dataset used for training and testing are available in order to ensure the reproducibility of the results. 
 
-Now we only offer dataset for *Falker-Skan* Boundary Layer [**FS**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/9f05eac466ed6f15638de9ec173e4826059b0b49/FS/data/FalknerSkan_n0.08.npz) and adverse-pressure-gradient (APG) Boundary Layer [**APG**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/9f05eac466ed6f15638de9ec173e4826059b0b49/APG/data/APG_b1n.npz) case.
+In this repository, we only offer dataset for *Falker-Skan* Boundary Layer [**FS**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/9f05eac466ed6f15638de9ec173e4826059b0b49/FS/data/FalknerSkan_n0.08.npz) and adverse-pressure-gradient (APG) Boundary Layer [**APG**](https://github.com/Fantasy98/Physics-informed-neural-networks-for-solving-Reynolds-averaged-Navier-Stokes-equations/blob/9f05eac466ed6f15638de9ec173e4826059b0b49/APG/data/APG_b1n.npz) case.
 
 Please, get in touch using the email address for correspondance in the paper to arrange the transfer. 
 
