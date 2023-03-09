@@ -34,7 +34,7 @@ For postprocessing the reults, it can be performed as follows:
     python postprocessing.py
 
 ## File Structure
-For *Falker-Skan* (**FS**) and adverse-pressure-gradient (**APG**) Boundary Layer case, take *Falker-Skan*(FS) Boundary Layer as example, the files follow structure below:
+All cases follow the same file structure, take *Falker-Skan*(FS) Boundary Layer as example, the files follow structure below:
 
     FS
     ├── data
