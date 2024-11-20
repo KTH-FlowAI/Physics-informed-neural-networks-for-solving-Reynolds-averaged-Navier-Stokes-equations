@@ -3,9 +3,8 @@ import tensorflow as tf
 from tensorflow.keras import models
 from lbfgs import optimizer as lbfgs_op
 
-
 class PINNs(models.Model):
-    def __init__(self, model, optimizer, epochs, **kwargs):
+    def __init__(self, model, optimizer, epochs, scaling_params, **kwargs):
         super(PINNs, self).__init__(**kwargs)
         self.model = model
         self.optimizer = optimizer
@@ -14,27 +13,41 @@ class PINNs(models.Model):
         self.epoch = 0
         self.sopt = lbfgs_op(self.trainable_variables)
         self.nu = 5e-6
+        self.scaling_params = tf.convert_to_tensor(scaling_params, tf.float32)
+     
+    @tf.function
+    def cord_trans(self, xy):
+        yn = xy[:, 1:2] * self.scaling_params[-1]
+        xn = xy[:, 0:1] * self.scaling_params[-2]
+        alpha = xy[:, 2:3]
+        xa = xy[:, 3:4]
+        ya = xy[:, 4:5]
+        y = yn * tf.cos(alpha) + ya
+        x = - yn * tf.sin(alpha) + xa
+        return x, y
               
     @tf.function
     def net_f(self, cp):
-        cp = self.scalex_r(cp)
-        x = cp[:, 0]
-        y = cp[:, 1]
+        x, y = self.cord_trans(cp)
+        alpha = cp[:, 2:3]
+        xa = cp[:, 3:4]
+        ya = cp[:, 4:5]
         with tf.GradientTape(persistent=True) as tape:
             tape.watch(x)
             tape.watch(y)
-            X = tf.stack([x, y], axis = -1)
-            X = self.scalex(X)
-            pred = self.model(X)
-            pred = self.scale_r(pred)
-            U = pred[:, 0]
-            V = pred[:, 1]
-            uv = pred[:, 2]
-            uu = pred[:, 3]
-            vv = pred[:, 4]
-            P = pred[:, 5]
+            
+            yn = (y - ya) / tf.cos(alpha)
+            xn = x + yn * tf.sin(alpha)
+            X = tf.concat([xn, yn], axis=1) / self.scaling_params[-2:]
 
-
+            UV = self.model(X)
+            U = UV[:, :1] * self.scaling_params[0]
+            V = UV[:, 1:2] * self.scaling_params[1]
+            uv = UV[:, 2:3] * self.scaling_params[2]
+            uu = UV[:, 3:4] * self.scaling_params[3]
+            vv = UV[:, 4:5] * self.scaling_params[4]
+            P = UV[:, 5:6] * self.scaling_params[5]
+           
             U_x = tape.gradient(U, x)
             U_y = tape.gradient(U, y)
             V_x = tape.gradient(V, x)
@@ -50,14 +63,11 @@ class PINNs(models.Model):
         uu_x = tape.gradient(uu, x)
         vv_y = tape.gradient(vv, y)
         
-      
-              
-        f1 = U * U_x + V * U_y + P_x -  self.nu * (U_xx + U_yy) + uu_x + uv_y
-        f2 = U * V_x + V * V_y + P_y -  self.nu * (V_xx + V_yy) + uv_x + vv_y
+        f1 = U * U_x + V * U_y + P_x - self.nu * (U_xx + U_yy) + uu_x + uv_y
+        f2 = U * V_x + V * V_y + P_y - self.nu * (V_xx + V_yy) + uv_x + vv_y
         f3 = U_x + V_y
-        
-        f = tf.stack([f1, f2, f3], axis = -1)
-        return f
+
+        return tf.concat([f1, f2, f3], axis = 1)
     
     
     @tf.function
@@ -69,7 +79,7 @@ class PINNs(models.Model):
             
             f = self.net_f(cp)
             
-            loss_bc = tf.reduce_mean(tf.square(y - u_p_bc))
+            loss_bc = tf.reduce_mean(tf.square(y[:, :-1] - u_p_bc[:, :-1]))
             loss_f = tf.reduce_mean(tf.square(f))
             
             loss_u = loss_bc
@@ -85,51 +95,9 @@ class PINNs(models.Model):
         tf.print('loss:', l1, 'loss_u:', l2, 'loss_f:', l3)
         return loss, grads, tf.stack([l1, l2, l3])
     
-    # @tf.function
-    def fit_scale(self, y):
-        ymax = tf.reduce_max(tf.abs(y), axis = 0)
-        self.ymax = ymax
-        return y / ymax
-    
-    @tf.function
-    def scale(self, y):
-        return y / self.ymax
-    
-    @tf.function
-    def scale_r(self, ys):
-        return ys * self.ymax
-    
-    # @tf.function
-    def fit_scalex(self, x):
-        xmax = tf.reduce_max(tf.abs(x), axis = 0)
-        xmin = tf.reduce_min(x, axis = 0)
-        self.xmax = xmax
-        self.xmin = xmin
-        xs = ((x - xmin) / (xmax - xmin))
-        return xs
-    
-    @tf.function
-    def scalex(self, x):
-        xs = ((x - self.xmin) / (self.xmax - self.xmin)) 
-        return xs
-    
-    @tf.function
-    def scalex_r(self, xs):
-        x = (xs) * (self.xmax - self.xmin) + self.xmin
-        return x
-    
     def fit(self, bc, cp):
         bc = tf.convert_to_tensor(bc, tf.float32)
         cp = tf.convert_to_tensor(cp, tf.float32)
-        
-        x_bc = bc[:, :2]
-        y_bc = bc[:, 2:]
-        
-        y_bc = self.fit_scale(y_bc)
-        x_bc = self.fit_scalex(x_bc)
-        
-        cp = self.scalex(cp)
-        bc = tf.concat([x_bc, y_bc], axis = 1)
         
         def func(params_1d):
             self.sopt.assign_params(params_1d)
@@ -154,7 +122,5 @@ class PINNs(models.Model):
     
     def predict(self, cp):
         cp = tf.convert_to_tensor(cp, tf.float32)
-        cp = self.scalex(cp)
         u_p = self.model(cp)
-        u_p = self.scale_r(u_p)
         return u_p.numpy()
