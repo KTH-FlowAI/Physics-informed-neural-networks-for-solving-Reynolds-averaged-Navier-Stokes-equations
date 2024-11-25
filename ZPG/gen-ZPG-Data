@@ -1,0 +1,16 @@
+# ! /bin/bash
+
+### Reconnecting data to avoid downloading issues
+### @yuningw 2024.11.21
+
+FOLDER="./data"
+TARGET_FILE="ZPG.mat"
+echo "--------------------------------------"
+echo " RECONECT DATA: ${FOLDER}/${TARGET_FILE}"
+echo "---------------------------------------"
+
+cat ${FOLDER}/x* > ${FOLDER}/${TARGET_FILE}
+
+echo "---------------------------------------"
+echo " COMPLETE: ${FOLDER}/${TARGET_FILE}    "
+echo "---------------------------------------"

@@ -116,10 +116,10 @@ bc = np.concatenate((xy_bc, uv_bc), axis=1)
 n_bc = len(bc)
 #%% collocation points
 cp = np.concatenate((xn[::500].reshape((-1, 1)),
-                       yn[::500].reshape((-1, 1)),
-                       a[::500].reshape((-1, 1)),
-                       xa[::500].reshape((-1, 1)),
-                       ya[::500].reshape((-1, 1))), axis = 1)
+                    yn[::500].reshape((-1, 1)),
+                    a[::500].reshape((-1, 1)),
+                    xa[::500].reshape((-1, 1)),
+                    ya[::500].reshape((-1, 1))), axis = 1)
 n_cp = len(cp)
 #%%
 #################
@@ -145,12 +145,13 @@ pinn = PINNs(model, opt, n_adam, scaling_params)
 #################
 # Training Process
 #################
-print(f"INFO: Start training case_{test_name}")
+print(f"[PINN] Start training case_{test_name}")
 st_time = time()
 pinn.fit(bc, cp)
 hist = np.array(pinn.hist)
 en_time = time()
 comp_time = en_time - st_time
+print(f"[PINN] Finished: {comp_time:.2f}")
 # %%
 #################
 # Prediction
@@ -175,4 +176,4 @@ err = l2norm_err(ref, pred)
 #################
 np.savez_compressed('pred/res_NACA' + test_name, pred = pred, ref = ref, hist = hist, ct = comp_time, err = err, xn = xn, yn = yn)
 model.save('models/model_NACA' + test_name + '.h5')
-print("INFO: Prediction and model have been saved!")
+print("[IO] Prediction and model have been saved!",flush=True)
