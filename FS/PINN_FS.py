@@ -36,12 +36,12 @@ class PINNs(models.Model):
 
             U_x = tape.gradient(U, x)
             U_y = tape.gradient(U, y)
-            V_x = tape.gradient(V, x)
+            # V_x = tape.gradient(V, x)
             V_y = tape.gradient(V, y)
         U_xx = tape.gradient(U_x, x)
         U_yy = tape.gradient(U_y, y)
-        V_xx = tape.gradient(V_x, x)
-        V_yy = tape.gradient(V_y, y)
+        # V_xx = tape.gradient(V_x, x)
+        # V_yy = tape.gradient(V_y, y)
         P_x = tape.gradient(P, x)
         P_y = tape.gradient(P, y)
       

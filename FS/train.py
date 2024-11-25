@@ -1,6 +1,6 @@
 import numpy as np
 from tensorflow.keras import models, layers, optimizers, activations
-from FS.PINN_FS import PINNs
+from PINN_FS import PINNs
 from matplotlib import pyplot as plt
 from time import time
 from train_configs import FS_config
@@ -28,21 +28,21 @@ act = FS_config.act
 nn = FS_config.n_neural
 nl = FS_config.n_layer
 n_adam = FS_config.n_adam
-cp_step = FS_config.cp_step
-bc_step = FS_config.bc_step
 #%%
 #################
 # Training Data
 #################
 
 # Collection points
-cp = np.concatenate((x[:, ::cp_step].reshape((-1, 1)), 
-                     y[:, ::cp_step].reshape((-1, 1))), axis = 1)
+np.random.seed(24)
+indx_f = np.random.choice(a = [False, True], size = x.shape, p = [0.99, 0.01])
+cp = np.concatenate((x[indx_f].reshape((-1, 1)), 
+                     y[indx_f].reshape((-1, 1))), axis = 1)
 n_cp = len(cp)
 
 # Boundary points
 ind_bc = np.zeros(x.shape, dtype = bool)
-ind_bc[[0, -1], ::bc_step] = True
+ind_bc[[0, -1], :] = True
 ind_bc[:, [0, -1]] = True
 
 x_bc = x[ind_bc].flatten()
@@ -105,8 +105,9 @@ p_p = pred[:, 2].reshape(u.shape)
 # Shift the pressure to the reference level before calculating the error
 # Becacuse we only have pressure gradients in N-S eqs but not pressure itself in BC
 deltap =p[0,0] - p_p[0,0]
-p_p = p_p+deltap
+p_p = p_p + deltap
 pred = np.stack((u_p, v_p, p_p))
+err = l2norm_err(ref, pred)
 #%%
 #################
 # Save prediction and Model
